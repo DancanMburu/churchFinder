@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessianicChurchFinder </title>
+    <meta name="description" content="Find Messianic church branches across Kenya including Zionist Church of God, Zionist Church of Elohim, Mt Zion Church of God, and Jerusalem Church of God">
+    <meta name="keywords" content="Messianic Churches Kenya, Zionist Church Finder Kenya, Sabbath churches Kenya, New Jerusalem Church Kenya">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        #map { height: 400px; }
+        .tab.active { 
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .church-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .sabbath-countdown {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        header {
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://images.unsplash.com/photo-1517649763962-0c623066013b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+        .map-marker {
+            background-color: #3b82f6;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid white;
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-church text-blue-600 text-2xl mr-2"></i>
+                        <span class="text-xl font-semibold text-gray-800">MessianicChurchFinder</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="text-blue-600 font-medium">Home</a>
+                    <a href="#find-church" class="text-gray-600 hover:text-blue-600 font-medium">Find a Church</a>
+                    <a href="#submit-church" class="text-gray-600 hover:text-blue-600 font-medium">Submit a Church</a>
+                    <a href="#about" class="text-gray-600 hover:text-blue-600 font-medium">About</a>
+                    <a href="#contact" class="text-gray-600 hover:text-blue-600 font-medium">Contact</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-600 focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white px-4 py-2 border-t">
+            <a href="#" class="block py-2 text-gray-600 hover:text-blue-600">Home</a>
+            <a href="#find-church" class="block py-2 text-gray-600 hover:text-blue-600">Find a Church</a>
+            <a href="#submit-church" class="block py-2 text-gray-600 hover:text-blue-600">Submit a Church</a>
+            <a href="#about" class="block py-2 text-gray-600 hover:text-blue-600">About</a>
+            <a href="#contact" class="block py-2 text-gray-600 hover:text-blue-600">Contact</a>
+        </div>
+    </nav>
+
+    <!-- Header/Hero -->
+    <header class="py-16 md:py-24 px-4 text-center">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-6">Find Messianic Churches in Kenya</h1>
+            <p class="text-xl text-gray-600 mb-8">Discover Sabbath-keeping churches across Kenya where the word of Elohim is preached in spirit and truth.</p>
+            
+            <div class="max-w-xl mx-auto mb-12 relative">
+                <input type="text" placeholder="Enter your county or town..." class="w-full py-4 px-6 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg">
+                <button class="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-6 rounded-full hover:bg-blue-700 transition">
+                    <i class="fas fa-search mr-2"></i> Search
+                </button>
+            </div>
+            
+            <div class="sabbath-countdown max-w-md mx-auto p-6 rounded-xl text-white text-center shadow-lg mb-8">
+                <h3 class="text-lg font-medium mb-2">Next Sabbath begins in:</h3>
+                <div id="countdown" class="text-3xl font-bold">--:--:--</div>
+            </div>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#find-church" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-md">
+                    <i class="fas fa-church mr-2"></i> Find a Church
+                </a>
+                <a href="#submit-church" class="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-medium transition shadow-md">
+                    <i class="fas fa-plus-circle mr-2"></i> Submit a Branch
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Interactive Map Section -->
+    <section class="py-12 bg-gray-100 px-4">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Church Branches Across Kenya</h2>
+            <div id="map" class="rounded-xl shadow-xl overflow-hidden border border-gray-300"></div>
+        </div>
+    </section>
+
+    <!-- Find a Church Section -->
+    <section id="find-church" class="py-16 px-4 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Find a Church Near You</h2>
+            
+            <div class="mb-8">
+                <div class="flex flex-wrap justify-center mb-6">
+                    <div class="flex rounded-lg overflow-hidden border border-gray-300 shadow-sm">
+                        <button class="tab active px-6 py-3 text-sm font-medium">All Branches</button>
+                        <button class="tab px-6 py-3 text-sm font-medium">By County</button>
+                        <button class="tab px-6 py-3 text-sm font-medium">By Church Name</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label for="county" class="block text-sm font-medium text-gray-700 mb-1">County</label>
+                        <select id="county" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">All Counties</option>
+                            <option>Nairobi</option>
+                            <option>Mombasa</option>
+                            <option>Kisumu</option>
+                            <option>Nakuru</option>
+                            <option>Eldoret</option>
+                            <option>Thika</option>
+                            <!-- More counties would be added here -->
+                       </select>
+                    </div>
+                    <div>
+                        <label for="church-name" class="block text-sm font-medium text-gray-700 mb-1">Church Name</label>
+                        <select id="church-name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">All Churches</option>
+                            <option>Zionist Church of God</option>
+                            <option>Zionist Church of Elohim</option>
+                            <option>Mt Zion Church of God</option>
+                            <option>Jerusalem Church of God</option>
+                            <option>New Jerusalem Church of God</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="location" class="block text-sm font-medium text-gray-700 mb-1">Town/Village</label>
+                        <input type="text" id="location" placeholder="Enter location" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="flex justify-center">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition">
+                        <i class="fas fa-filter mr-2"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Sample Church Cards -->
+              <div class="church-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300 ease-in-out">
+              <div class="h-40 bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-church text-blue-600 text-6xl"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Zionist Church of God</h3>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i> Nairobi, Githurai</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-user-tie text-blue-500 mr-2"></i> Pastor John Mwangi</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-clock text-blue-500 mr-2"></i> Fridays 6pm - Saturdays 6pm</p>
+                        <div class="flex justify-between">
+                            <a href="#" class="text-blue-600 font-medium hover:text-blue-800">View Details</a>
+                            <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fas fa-directions"></i></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="church-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300 ease-in-out">
+                    <div class="h-40 bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-church text-green-600 text-6xl"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Mt Zion Church of God</h3>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i> Mombasa, Likoni</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-user-tie text-blue-500 mr-2"></i> Pastor Samuel Wanjala</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-clock text-blue-500 mr-2"></i> Fridays 6pm - Saturdays 6pm</p>
+                        <div class="flex justify-between">
+                            <a href="#" class="text-blue-600 font-medium hover:text-blue-800">View Details</a>
+                            <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fas fa-directions"></i></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="church-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300 ease-in-out">
+                    <div class="h-40 bg-yellow-100 flex items-center justify-center">
+                        <i class="fas fa-church text-yellow-600 text-6xl"></i>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">New Jerusalem Church of God</h3>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i> Nakuru, Bahati</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-user-tie text-blue-500 mr-2"></i> Pastor David Omwenga</p>
+                        <p class="text-gray-600 mb-4"><i class="fas fa-clock text-blue-500 mr-2"></i> Fridays 6pm - Saturdays 6pm</p>
+                        <div class="flex justify-between">
+                            <a href="#" class="text-blue-600 font-medium hover:text-blue-800">View Details</a>
+                            <a href="#" class="text-gray-600 hover:text-blue-600"><i class="fas fa-directions"></i></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- More cards would be dynamically loaded here -->
+            </div>
+            
+            <div class="mt-12 text-center">
+                <button class="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-medium transition shadow-md">
+                    <i class="fas fa-redo mr-2"></i> Load More Churches
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Church Detail Page Sample (Would be a separate page but shown here for demonstration) -->
+    <section id="church-detail" class="py-16 px-4 bg-gray-50 hidden">
+        <div class="max-w-5xl mx-auto">
+            <button id="back-to-results" class="mb-6 flex items-center text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-2"></i> Back to results
+            </button>
+            
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="h-64 bg-blue-200 flex items-center justify-center relative">
+                    <i class="fas fa-church text-blue-600 text-8xl"></i>
+                    <div class="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-star mr-1"></i> Featured
+                    </div>
+                </div>
+                
+                <div class="p-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800">Zionist Church of God, Githurai Branch</h2>
+                            <p class="text-gray-600 mt-2"><i class="fas fa-map-marker-alt text-blue-500 mr-2"></i> Nairobi, Githurai near Kimbo Shopping Center</p>
+                        </div>
+                        <div class="mt-4 md:mt-0">
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition">
+                                <i class="fas fa-directions mr-2"></i> Get Directions
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="p-4 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-2 rounded-full mr-3">
+                                    <i class="fas fa-user-tie text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-gray-500 text-sm">Pastor</h4>
+                                    <p class="font-medium">John Mwangi</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-2 rounded-full mr-3">
+                                    <i class="fas fa-clock text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-gray-500 text-sm">Service Times</h4>
+                                    <p class="font-medium">Friday sunset - Saturday sunset</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 border border-gray-200 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-2 rounded-full mr-3">
+                                    <i class="fas fa-phone text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-gray-500 text-sm">Contact</h4>
+                                    <p class="font-medium">0712 345 678</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">About This Church</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            The Zionist Church of God in Githurai is a vibrant Sabbath-keeping congregation serving the Githurai area since 2005. 
+                            We believe in the restoration of the Hebraic roots of the faith and observe the biblical Sabbath from Friday sunset 
+                            to Saturday sunset. Visitors are always welcome to join us as we worship Yah in spirit and truth.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Location Map</h3>
+                        <div id="detail-map" class="h-64 rounded-lg border border-gray-300"></div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Service Schedule</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Friday</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">6:00 PM - 8:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sabbath Welcome Service</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Saturday</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">9:00 AM - 12:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Morning Worship & Torah Study</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Saturday</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2:00 PM - 5:00 PM</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Youth Fellowship</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Submit a Church Section -->
+    <section id="submit-church" class="py-16 px-4 bg-gray-100">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Submit a Church Branch</h2>
+            
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <form id="church-form">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-medium text-gray-800 mb-4">Church Information</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="church-name-submit" class="block text-sm font-medium text-gray-700 mb-1">Church Name</label>
+                                <select id="church-name-submit" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                    <option value="">Select Church Name</option>
+                                    <option>Zionist Church of God</option>
+                                    <option>Zionist Church of Elohim</option>
+                                    <option>Mt Zion Church of God</option>
+                                    <option>Jerusalem Church of God</option>
+                                    <option>New Jerusalem Church of God</option>
+                                    <option value="other">Other (Specify)</option>
+                                </select>
+                                <input type="text" id="other-church-name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 mt-2 hidden" placeholder="Enter other church name">
+                            </div>
+                            
+                            <div>
+                                <label for="pastor-name" class="block text-sm font-medium text-gray-700 mb-1">Pastor Name</label>
+                                <input type="text" id="pastor-name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                            </div>
+                            
+                            <div>
+                                <label for="county-submit" class="block text-sm font-medium text-gray-700 mb-1">County</label>
+                                <select id="county-submit" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                    <option value="">Select County</option>
+                                    <option>Nairobi</option>
+                                    <option>Mombasa</option>
+                                    <option>Kisumu</option>
+                                    <option>Nakuru</option>
+                                    <option>Eldoret</option>
+                                    <option>Thika</option>
+                                    <!-- More counties would be added here -->
+                             </select>
+                            </div>
+                            
+                            <div>
+                                <label for="town" class="block text-sm font-medium text-gray-700 mb-1">Town/Village</label>
+                                <input type="text" id="town" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                            </div>
+                            
+                            <div>
+                                <label for="landmark" class="block text-sm font-medium text-gray-700 mb-1">Landmark</label>
+                                <input type="text" id="landmark" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Near main market, behind hospital, etc.">
+                            </div>
+                            
+                            <div>
+                                <label for="service-time" class="block text-sm font-medium text-gray-700 mb-1">Service Time</label>
+                                <input type="text" id="service-time" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" value="Friday sunset to Saturday sunset (Sabbath)" readonly>
+                            </div>
+                            
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
+                                <input type="tel" id="phone" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="map-link" class="block text-sm font-medium text-gray-700 mb-1">Google Maps Link (Optional)</label>
+                                <input type="url" id="map-link" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="https://goo.gl/maps/...">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-xl font-medium text-gray-800 mb-4">Location on Map</h3>
+                        <div id="submit-map" class="h-64 rounded-lg border border-gray-300 mb-4"></div>
+                        <p class="text-sm text-gray-500">Click on the map to mark the church location or enter the coordinates below.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            <div>
+                                <label for="latitude" class="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                                <input type="text" id="latitude" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="longitude" class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                                <input type="text" id="longitude" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-xl font-medium text-gray-800 mb-4">Church Photo (Optional)</h3>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="church-photo" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
+                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p class="text-xs text-gray-500">PNG, JPG, JPEG (MAX. 5MB)</p>
+                                </div>
+                                <input id="church-photo" type="file" class="hidden" accept="image/*">
+                            </label>
+                        </div> 
+                    </div>
+                    
+                    <div class="flex justify-center mt-8">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-md">
+                            <i class="fas fa-paper-plane mr-2"></i> Submit Church
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section> -->
+
+    <!-- About Section -->
+    <section id="about" class="py-16 px-4 bg-white">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">About MessianicChurchFinder</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="bg-blue-100 p-3 rounded-full mr-4">
+                            <i class="fas fa-cross text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">Our Mission</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed mb-6">
+                        MessianicChurchFinder was established to connect believers with Sabbath-keeping churches across Kenya. 
+                        Our platform serves as a directory for Zionist and Messianic congregations that observe the biblical 
+                        Sabbath from Friday sunset to Saturday sunset.
+                    </p>
+                    <p class="text-gray-600 leading-relaxed">
+                        We aim to make it easy for people to find churches that align with their faith practices and to support 
+                        the growth of these congregations across the country.
+                    </p>
+                </div>
+                
+                <div>
+                    <div class="flex items-center mb-6">
+                        <div class="bg-blue-100 p-3 rounded-full mr-4">
+                            <i class="fas fa-clock text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-800">The Sabbath</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed mb-6">
+                        The Sabbath is a holy day of rest commanded by Yahweh in the Ten Commandments (Exodus 20:8-11). 
+                        It begins at sunset on Friday and ends at sunset on Saturday, following the biblical reckoning 
+                        of days (Genesis 1:5, "There was evening, and there was morning—the first day").
+                    </p>
+                    <p class="text-gray-600 leading-relaxed">
+                        Sabbath-keeping churches maintain this practice as an essential part of worship and obedience to Elohim's commandments.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-12">
+                <div class="flex items-center mb-6">
+                    <div class="bg-blue-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-history text-blue-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800">The Movement in Kenya</h3>
+                </div>
+                <p class="text-gray-600 leading-relaxed">
+                    The Zionist and Messianic church movement in Kenya has grown significantly since the 1990s, with thousands 
+                    of members across the country. These churches emphasize the Hebrew roots of Christianity, observing the 
+                    biblical feasts and dietary laws alongside their faith in Yeshua (Jesus) as the Messiah.
+                </p>
+                <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-blue-600 text-3xl font-bold">150+</div>
+                        <div class="text-gray-600">Churches</div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-blue-600 text-3xl font-bold">47</div>
+                        <div class="text-gray-600">Counties</div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-blue-600 text-3xl font-bold">25+</div>
+                        <div class="text-gray-600">Years</div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="text-blue-600 text-3xl font-bold">10k+</div>
+                        <div class="text-gray-600">Members</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section> -->
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-16 px-4 bg-gray-100">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Contact Us</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h3 class="text-xl font-medium text-gray-800 mb-6">Send Us a Message</h3>
+                    <form id="contact-form">
+                        <div class="mb-4">
+                            <label for="contact-name" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                            <input type="text" id="contact-name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="contact-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" id="contact-email" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="contact-subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                            <input type="text" id="contact-subject" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label for="contact-message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                            <textarea id="contact-message" rows="4" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required></textarea>
+                        </div>
+                        
+                        <div class="flex justify-center">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition shadow-md">
+                                <i class="fas fa-envelope mr-2"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div>
+                    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                        <h3 class="text-xl font-medium text-gray-800 mb-4">Other Ways to Reach Us</h3>
+                        
+                        <div class="flex items-start mb-4">
+                            <div class="bg-blue-100 p-3 rounded-full mr-4">
+                                <i class="fas fa-phone text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-gray-800">Phone</h4>
+                                <p class="text-gray-600">+254 111 256 681</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start mb-4">
+                            <div class="bg-blue-100 p-3 rounded-full mr-4">
+                                <i class="fab fa-whatsapp text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-gray-800">WhatsApp</h4>
+                                <p class="text-gray-600">+254 111 256 681</p>
+                                <a href="#" class="text-blue-600 text-sm hover:underline">Click to chat</a>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="bg-blue-100 p-3 rounded-full mr-4">
+                                <i class="fas fa-envelope text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-medium text-gray-800">Email</h4>
+                                <p class="text-gray-600">contact@messianicchurchfinder.ke</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <h3 class="text-xl font-medium text-gray-800 mb-4">Follow Us</h3>
+                        <div class="flex space-x-4">
+                            <a href="#" class="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="bg-blue-400 text-white p-3 rounded-full hover:bg-blue-500 transition">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-full hover:opacity-90 transition">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" class="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transition">
+                                <i class="fab fa-youtube"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-church text-blue-400 text-2xl mr-2"></i>
+                        <span class="text-xl font-semibold">MessianicChurchFinder</span>
+                    </div>
+                    <p class="text-gray-400">
+                        Connecting believers with Sabbath-keeping churches across Kenya since 2023.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">Home</a></li>
+                        <li><a href="#find-church" class="text-gray-400 hover:text-blue-400 transition">Find a Church</a></li>
+                        <li><a href="#submit-church" class="text-gray-400 hover:text-blue-400 transition">Submit a Church</a></li>
+                        <li><a href="#about" class="text-gray-400 hover:text-blue-400 transition">About Us</a></li>
+                        <li><a href="#contact" class="text-gray-400 hover:text-blue-400 transition">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Church Types</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">Zionist Church of God</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">Zionist Church of Elohim</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">Mt Zion Church of God</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">Jerusalem Church of God</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-blue-400 transition">New Jerusalem Church of God</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+                    <p class="text-gray-400 mb-4">
+                        Subscribe to get updates on new churches and messages.
+                    </p>
+                    <div class="flex">
+                        <input type="email" placeholder="Your email" class="py-2 px-4 rounded-l-md focus:outline-none text-gray-800 w-full">
+                        <button class="bg-blue-600 hover:bg-blue-700 py-2 px-4 rounded-r-md transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 mb-4 md:mb-0">
+                    &copy; 2023 MessianicChurchFinder. All rights reserved.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-blue-400 transition">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-blue-400 transition">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Church name selection
+        document.getElementById('church-name-submit').addEventListener('change', function() {
+            const otherInput = document.getElementById('other-church-name');
+            if (this.value === 'other') {
+                otherInput.classList.remove('hidden');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.required = false;
+            }
+        });
+
+        // Back to results button
+        document.getElementById('back-to-results')?.addEventListener('click', function() {
+            document.getElementById('find-church').classList.remove('hidden');
+            document.getElementById('church-detail').classList.add('hidden');
+        });
+
+        // Sample church card click to show details
+        document.querySelectorAll('.church-card a[href="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('find-church').classList.add('hidden');
+                document.getElementById('church-detail').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            });
+        });
+
+        // Initialize main map
+        const map = L.map('map').setView([-0.0236, 37.9062], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Sample church locations
+        const churches = [
+            {name: "Zionist Church of God", location: [-1.2684, 36.8647], city: "Nairobi, Githurai"},
+            {name: "Mt Zion Church of God", location: [-4.0435, 39.6682], city: "Mombasa, Likoni"},
+            {name: "New Jerusalem Church of God", location: [-0.3031, 36.0800], city: "Nakuru, Bahati"},
+            {name: "Zionist Church of Elohim", location: [0.5199, 35.2694], city: "Eldoret"},
+            {name: "Jerusalem Church of God", location: [-1.0483, 37.0833], city: "Thika"}
+        ];
+
+        // Add markers to map
+        churches.forEach(church => {
+            const marker = L.marker(church.location).addTo(map);
+            marker.bindPopup(`<b>${church.name}</b><br>${church.city}`);
+        });
+
+        // Initialize detail map
+        const detailMap = L.map('detail-map').setView([-1.2684, 36.8647], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(detailMap);
+        
+        // Add marker to detail map
+        L.marker([-1.2684, 36.8647]).addTo(detailMap)
+            .bindPopup("<b>Zionist Church of God</b><br>Githurai, near Kimbo Shopping Center")
+            .openPopup();
+
+        // Initialize submit map
+        const submitMap = L.map('submit-map').setView([-1.2684, 36.8647], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(submitMap);
+
+        let submitMarker;
+        submitMap.on('click', function(e) {
+            if (submitMarker) {
+                submitMap.removeLayer(submitMarker);
+            }
+            submitMarker = L.marker(e.latlng).addTo(submitMap);
+            document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+            document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+        });
+
+        // Sabbath countdown timer
+        function updateCountdown() {
+            const now = new Date();
+            const day = now.getDay(); // 0 is Sunday, 6 is Saturday
+            const hour = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            
+            // Next Sabbath starts at Friday 6pm local time
+            let daysToSabbath, hoursToSabbath, minsToSabbath, secsToSabbath;
+            
+            if ((day === 5 && hour >= 18) || day === 6) {
+                // After Friday 6pm or on Saturday, show time until next Sabbath
+                daysToSabbath = (5 - day + 7) % 7;
+                hoursToSabbath = 18 - hour;
+                minsToSabbath = 0 - minutes;
+                secsToSabbath = 0 - seconds;
+            } else {
+                // Before Friday 6pm, show time until this week's Sabbath
+                daysToSabbath = (5 - day) % 7;
+                hoursToSabbath = 18 - hour;
+                minsToSabbath = 0 - minutes;
+                secsToSabbath = 0 - seconds;
+            }
+            
+            // Adjust negative values
+            if (secsToSabbath < 0) {
+                secsToSabbath += 60;
+                minsToSabbath -= 1;
+            }
+            if (minsToSabbath < 0) {
+                minsToSabbath += 60;
+                hoursToSabbath -= 1;
+            }
+            if (hoursToSabbath < 0) {
+                hoursToSabbath += 24;
+                daysToSabbath -= 1;
+            }
+            
+            // Display the countdown
+            document.getElementById('countdown').textContent = 
+                `${daysToSabbath}d ${hoursToSabbath}h ${minsToSabbath}m ${secsToSabbath}s`;
+        }
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        // Form submission handlers
+        document.getElementById('church-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for submitting a church branch! Our team will review your submission and add it to our directory soon.');
+            this.reset();
+            if (submitMarker) {
+                submitMap.removeLayer(submitMarker);
+            }
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your message! We will get back to you soon.');
+            this.reset();
+        });
+    </script>
+</body>
+</html>
